@@ -425,7 +425,7 @@ Generate query json
     "term":{
         "age": 13
     }
-  }
+  },
   {
     "terms":{
         "age": [13,15]
@@ -443,7 +443,7 @@ Generate json
   "exists":{
     "field":"age"
   }
-}
+},
 {
   "exists":{
     "fields":["age","title"]
@@ -465,7 +465,7 @@ Generate json
             "gt": 1
         }
     }
-  }
+  },
   {
     "range":{
         "age":{
@@ -473,14 +473,14 @@ Generate json
             "lt": 10
         }
     }
-  }
+  },
   {
     "range":{
         "age":{
             "lt": 10
         }
     }
-  }
+  },
   {
     "range":{
         "age":{
