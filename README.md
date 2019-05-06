@@ -1,496 +1,496 @@
 
-# elasticsearch-orm - 一个基本的 Elasticsearch 的 查询 API
+# elasticsearch-orm - A basic Elasticsearch query API
 
 [![npm package](https://nodei.co/npm/elasticsearch-orm.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/elasticsearch-orm/)
 
-## 安装
+## Installation
 
 ```bash
-  npm install elasticsearch-orm
+  Npm install elasticsearch-orm
 ```
 
-## 目录
+## table of Contents
 
-- [创建连接](#user-content-创建连接)
-- [索引相关](#user-content-索引相关)
-- [文档相关](#user-content-文档相关)
-- [查询相关](#user-content-查询相关)
-- [使用聚合](#user-content-使用聚合)
-- [分页相关](#user-content-分页相关)
-- [设置](#user-content-设置)
-- [集群相关接口](#user-content-集群相关接口)
-- [查询API](#user-content-查询api)
-- [聚合API](#user-content-聚合api)
+- [Create Connection] (#user-content-Create Connection)
+- [Index related] (#user-content-index related)
+- [Document related] (#user-content-document related)
+- [Query related] (#user-content-query related)
+- [Use Aggregate] (#user-content-Use Aggregation)
+- [Paging related] (#user-content-page related)
+- [Settings] (#user-content-setting)
+- [Cluster related interface] (#user-content-cluster related interface)
+- [Query API] (#user-content-Query api)
+- [Aggregate API] (#user-content-aggregate api)
 
 ---
 
 
-## 创建连接
+## Create a connection
 
 ```js
-  const orm = require('elasticsearch-orm');
-  const instance = orm({
-      'domain':'127.0.0.1',
-      'port':9200
-  });
+  Const orm = require('elasticsearch-orm');
+  Const instance = orm({
+      'domain': '127.0.0.1',
+      'port': 9200
+  });
 
-  instance.on('connected',() =>{
-      console.log('连接成功');
-  });
+  Instance.on('connected',() =>{
+      Console.log('Connected successfully');
+  });
 
-  instance.on('error',(e) =>{
-    console.log('连接异常',e);
-  });
+  Instance.on('error',(e) =>{
+    Console.log('connection exception', e);
+  });
 ```
-## 索引相关
+## Index related
 
-### 创建一个索引
+### Create an index
 
-生成一个索引类型
-
-```js
-  
-  const demoIndex = instance.register('demoIndex',{
-      'index':'demoindex',
-      'type':'demotype'
-    },{
-        'title':{
-            'type':'text'
-        },
-        'age':{
-            'type':'integer'
-        },
-        'location':{
-            'type':'geo_point'
-        }
-      },{
-        'number_of_shards': 2,
-        'number_of_replicas': 4
-      });
-
-```
-同步索引：如果索引还未被创建，就会按照 mappings 和 settings `创建`索引，如果索引已经创建，则会自动判断哪些 mappings 是新增的，并将这些新增的 mappings `添加`到索引中。sync 方法返回一个 Promise 对象，所以可以使用 await 关键字。
-
+Generate an index type
 
 ```js
-   await demoIndex.sync();
-```
-
-### 索引健康值
-```js
-    const health = await demoIndex.health();
-```
-### 索引状态
-```js
-    const stat = await demoIndex.stat();
-```
-### 索引统计
-```js
-    const state = await demoIndex.state();
-```
-### 设置索引别名
-```js
-    const result = await demoIndex.alias(['alias_name']);
-```
-### 删除别名
-```js
-    const result = await demoIndex.removeAlias(['alias_name']);
-```
-### 刷新
-```js
-    const result = await demoIndex.refresh();
-```
-### 冲洗
-```js
-    const result = await demoIndex.flush();
-```
-### 强制合并
-```js
-    const result = await demoIndex.forceMerge();
-```
-### 测试分词器
-```js
-    const result = await demoIndex.analyze('我爱北京天安门','ik_max_word');
-```
-### 开启一个索引
-```js
-    const result = await demoIndex.open();
-```
-
-### 关闭一个索引
-```js
-    const result = await demoIndex.close();
-```
-
-## 文档相关
-### 创建文档
-create 方法返回一个 Promise 对象，可以使用 await 关键字，最终返回新建的文档 ID
-```js
-let id = await demoIndex.create({
-    'title':'Demo Title',
-    'age',12,
-    'location':{
-      'lon':100.1,
-      'lat':40.2
-    }
-  });
-```
-
-指定文档 ID 创建文档
-```js
-  await demoIndex.create({
-    'title':'Demo Title',
-    'age',12,
-    'location':{
-      'lon':100.1,
-      'lat':40.2
-    }
-  },'document_id');
-```
-指定文档 routing 
-```js
-  await demoIndex.create({
-    'title':'Demo Title',
-    'age',12,
-    'location':{
-      'lon':100.1,
-      'lat':40.2
-    }
-  },'document_id','routing_hash');
-```
-指定父节点
-```js
-  await demoIndex.create({
-    'title':'Title',
-    'age':123
-    },null,null,{
-      'parent':'parent_id'
-    })
-```
-### 更新文档
-```js
-  await demoIndex.update('docuemnt_id',{
-    'title':"Demo Title 2",
-    'age':13
-  })
-```
-指定文档 routing
-```js
-  await demoIndex.update('document_id',{
-    'title':'Demo Title 2',
-    'age':14
-    },'routing_hash')
-```
-### 删除文档
-```js
-  await demoIndex.delete(id);
-  await demoIndex.delete(['id1','id2'])
-```
-### 通过 id 获取文档 
-如果 id 不存在，会返回一个 Error
-```js
-  let doc = await demoIndex.get(id);
-```
-
-## 查询相关
-### 构建简单查询
-```js
-    let ret = await demoIndex.query();
-```
-ret 对象返回连个子对象，一个是list，是将结果提取好的_source 数组，另一个是 orgResult，是 es 返回的原始内容
-### 查询条件
-单一查询条件，全部查询条件列表请参看 [查询 API](#user-content-查询api)
-```js
-  let ret = await demoIndex.term('age',12).query();
-```
-多查询条件
-```js
-  let ret = await demoIndex
-      .term('age',12)
-      .match('title','')
-      .query();
-```
-must,should,not 查询
-```js
-  const Condition = require("elasticsearch-orm").Condition;
-  let ret = await demoIndex
-    .must(new Condition().term('age',12))
-    .should(new Condition().match('title','Tiel'))
-    .not(new Condition().exists('age'))
-    .query();
+  
+  Const demoIndex = instance.register('demoIndex',{
+      'index': 'demoindex',
+      'type': 'demotype'
+    },{
+        'title':{
+            'type': 'text'
+        },
+        'age':{
+            'type': 'integer'
+        },
+        'location':{
+            'type': 'geo_point'
+        }
+      },{
+        'number_of_shards': 2,
+        'number_of_replicas': 4
+      });
 
 ```
-filter 查询
+Synchronous index: If the index has not been created, it will create an index according to mappings and settings `. If the index has been created, it will automatically determine which mappings are new, and add these new mappings ` to the index. . The sync method returns a Promise object, so you can use the await keyword.
+
+
 ```js
-  const Condition = require("elasticsearch-orm").Condition;
-  let ret = await demoIndex
-            .filter(new Condition().matchAll())
-            .query();
-```
-### 构建嵌套查询
-```js
-const Condition = require("elasticsearch-orm").Condition;
-let condition = new Condition();
-condition.term('age',12)
-    .match('title','Title')
-    .not(new Conditio()
-    .range('age',0,10));
-let ret = await demoIndex
-    .should(condition)
-    .exists('location')
-    .query();
+   Await demoIndex.sync();
 ```
 
-## 使用聚合
-### 使用基本聚合
-通过 orgResult 对象的原始返回值，可以拿到聚合的结果，完整的聚合 API 请参看 [聚合 API](#user-content-聚合api)
+### Index Health Value
 ```js
-  const Aggs = require('elasticsearch-orm').Aggs;
-  let ret = await demoIndex
-      .exists('age')
-      .aggs(new Aggs('avg_age').avg('age'))
-      .query();
+    Const health = await demoIndex.health();
 ```
-### 聚合的子聚合
+### Index Status
 ```js
-  const Aggs = require('elasticsearch-orm').Aggs;
-  let aggs = new Aggs('test_aggs').terms('title');
-  aggs.aggs(new Aggs('sub_aggs').valueCount('age'));
-  let ret = await demoIndex
-      .exist('age')
-      .aggs(aggs)
-      .query();
+    Const stat = await demoIndex.stat();
 ```
-## 分页相关
-### 分页
+### Index Statistics
 ```js
-  let ret = await demoIndex
-      .from(0)
-      .size(15)
-      .query();
+    Const state = await demoIndex.state();
 ```
-### 使用滚动
-发起一个滚动
+### Setting index aliases
 ```js
-    await demoIndex.query({
-        'scroll':'1m'
-    })
+    Const result = await demoIndex.alias(['alias_name']);
 ```
-执行滚动
+### Deleting an alias
 ```js
-    await demoIndex.scroll(scrollId,{
-        'scroll':'1m'
-    });
+    Const result = await demoIndex.removeAlias(['alias_name']);
 ```
-清除一个滚动
+### Refresh
 ```js
-    await demoIndex.clearScroll(scrollId);
+    Const result = await demoIndex.refresh();
 ```
-### 排序
+### Flush
 ```js
-  let ret = await demoIndex
-      .sort('age','asc')
-      .sort('title','asc','min')
-      .query();
+    Const result = await demoIndex.flush();
 ```
-或者
+### Forced merger
 ```js
-  let ret = await demoIndex
-      .sort({
-          'age':{
-              'order':'desc',
-              'mode':'min'
-          }
-      })
-      .query();
+    Const result = await demoIndex.forceMerge();
 ```
-## 设置
-如果设置了 debug 为 true，则每次请求的请求体、url和返回值都会被打印出来
+### Test word breaker
 ```js
-  let instance = orm({
-    'domain':'127.0.0.1',
-    'port':9200
-  });
-  instance.set("debug",true);
+    Const result = await demoIndex.analyze('I love Beijing Tiananmen', 'ik_max_word');
 ```
-可以设置 debug 的方法
+### Open an index
 ```js
-  instance.set("log",console.log);
-```
-设置请求超时时间，以毫秒为单位（默认是30s）
-```js
-  instance.set('timeout',5000);
-```
-## 集群相关接口
-### 获取集群健康值
-```js
-    const health = await instance.health();
-```
-### 获取集群状态
-```js
-    const state = await instance.state();
-```
-### 获取集群统计
-```js
-    const stat = await instance.stat();
-```
-### 获取索引列表
-```js
-    const result = await instance.indices();
-```
-### 节点信息
-```js
-    const result = await instance.nodes();
-```
-### 节点状态
-```js
-    const result = await instance.nodeStat('node_id');
-```
-### 关闭一个节点
-```js
-    const result = await instance.shutDown('node_id');
+    Const result = await demoIndex.open();
 ```
 
-## 查询API
-### 文本匹配
-#### match 查询
+### Close an index
 ```js
-  let condition = new Condition();
-  condition.match('title','content1 content2');
-  condition.match('title','content1 content2',{
-    'operator':'and'
-    });
+    Const result = await demoIndex.close();
 ```
-生成的查询json 为
+
+## Document related
+### Creating a document
+The create method returns a Promise object, which can be used to return the newly created document ID using the await keyword.
+```js
+Let id = await demoIndex.create({
+    'title': 'Demo Title',
+    'age',12,
+    'location':{
+      'lon': 100.1,
+      'lat': 40.2
+    }
+  });
+```
+
+Specify document ID to create document
+```js
+  Await demoIndex.create({
+    'title': 'Demo Title',
+    'age',12,
+    'location':{
+      'lon': 100.1,
+      'lat': 40.2
+    }
+  },'document_id');
+```
+Specify document routing
+```js
+  Await demoIndex.create({
+    'title': 'Demo Title',
+    'age',12,
+    'location':{
+      'lon': 100.1,
+      'lat': 40.2
+    }
+  },'document_id','routing_hash');
+```
+Specify parent node
+```js
+  Await demoIndex.create({
+    'title': 'Title',
+    'age':123
+    },null,null,{
+      'parent': 'parent_id'
+    })
+```
+### Update document
+```js
+  Await demoIndex.update('docuemnt_id',{
+    'title': "Demo Title 2",
+    'age': 13
+  })
+```
+Specify document routing
+```js
+  Await demoIndex.update('document_id',{
+    'title': 'Demo Title 2',
+    'age': 14
+    },'routing_hash')
+```
+### Deleting documents
+```js
+  Await demoIndex.delete(id);
+  Await demoIndex.delete(['id1','id2'])
+```
+### Getting documents by id
+If the id does not exist, an error will be returned
+```js
+  Let doc = await demoIndex.get(id);
+```
+
+## Query related
+### Building a simple query
+```js
+    Let ret = await demoIndex.query();
+```
+The ret object returns a sub-object, one is list, which is the _source array that extracts the result, and the other is orgResult, which is the original content returned by es
+### Query conditions
+Single query condition, please refer to [Query API] (#user-content-Query api) for a list of all query conditions.
+```js
+  Let ret = await demoIndex.term('age',12).query();
+```
+Multiple query conditions
+```js
+  Let ret = await demoIndex
+      .term('age',12)
+      .match('title','')
+      .query();
+```
+Must,should,not
+```js
+  Const Condition = require("elasticsearch-orm").Condition;
+  Let ret = await demoIndex
+    .must(new Condition().term('age',12))
+    .should(new Condition().match('title','Tiel'))
+    .not(new Condition().exists('age'))
+    .query();
+
+```
+Filter query
+```js
+  Const Condition = require("elasticsearch-orm").Condition;
+  Let ret = await demoIndex
+            .filter(new Condition().matchAll())
+            .query();
+```
+### Building nested queries
+```js
+Const Condition = require("elasticsearch-orm").Condition;
+Let condition = new Condition();
+Condition.term('age',12)
+    .match('title','Title')
+    .not(new Conditio()
+    .range('age',0,10));
+Let ret = await demoIndex
+    .should(condition)
+    .exists('location')
+    .query();
+```
+
+## Using Aggregation
+### Using basic aggregation
+The result of the aggregation can be obtained by the original return value of the orgResult object. For the complete aggregation API, please refer to [Aggregate API] (#user-content-aggregation api)
+```js
+  Const Aggs = require('elasticsearch-orm').Aggs;
+  Let ret = await demoIndex
+      .exists('age')
+      .aggs(new Aggs('avg_age').avg('age'))
+      .query();
+```
+### Aggregated child aggregation
+```js
+  Const Aggs = require('elasticsearch-orm').Aggs;
+  Let aggs = new Aggs('test_aggs').terms('title');
+  Aggs.aggs(new Aggs('sub_aggs').valueCount('age'));
+  Let ret = await demoIndex
+      .exist('age')
+      .aggs(aggs)
+      .query();
+```
+## Pagination related
+### Pagination
+```js
+  Let ret = await demoIndex
+      .from(0)
+      .size(15)
+      .query();
+```
+### Using scrolling
+Initiate a scroll
+```js
+    Await demoIndex.query({
+        'scroll': '1m'
+    })
+```
+Perform scrolling
+```js
+    Await demoIndex.scroll(scrollId,{
+        'scroll': '1m'
+    });
+```
+Clear a scroll
+```js
+    Await demoIndex.clearScroll(scrollId);
+```
+### Sorting
+```js
+  Let ret = await demoIndex
+      .sort('age','asc')
+      .sort('title','asc','min')
+      .query();
+```
+or
+```js
+  Let ret = await demoIndex
+      .sort({
+          'age':{
+              'order': 'desc',
+              'mode': 'min'
+          }
+      })
+      .query();
+```
+## Settings
+If debug is set to true, the request body, url, and return value for each request will be printed.
+```js
+  Let instance = orm({
+    'domain': '127.0.0.1',
+    'port': 9200
+  });
+  Instance.set("debug",true);
+```
+Can set the debug method
+```js
+  Instance.set("log",console.log);
+```
+Set request timeout in milliseconds (default is 30s)
+```js
+  Instance.set('timeout',5000);
+```
+## Cluster related interface
+### Get cluster health value
+```js
+    Const health = await instance.health();
+```
+### Get cluster status
+```js
+    Const state = await instance.state();
+```
+### Get cluster statistics
+```js
+    Const stat = await instance.stat();
+```
+### Getting an index list
+```js
+    Const result = await instance.indices();
+```
+### Node Information
+```js
+    Const result = await instance.nodes();
+```
+### Node Status
+```js
+    Const result = await instance.nodeStat('node_id');
+```
+### Close a node
+```js
+    Const result = await instance.shutDown('node_id');
+```
+
+## Query API
+### Text matching
+#### match Query
+```js
+  Let condition = new Condition();
+  Condition.match('title','content1 content2');
+  Condition.match('title','content1 content2',{
+    'operator': 'and'
+    });
+```
+The generated query json is
 ```json
-  {
-    "match":{
-        "title":"content1 content2",
-        "operator":"and"
-    }
-  }
+  {
+    "match":{
+        "title": "content1 content2",
+        "operator":"and"
+    }
+  }
 ```
-field 参数可以是数组
+The field argument can be an array
 ```js
-  condition.match(['title','description'],'content1 content2');
-  condition.match(['title','description'],'content1 content2',{
-      'type':'best_fields'
-    });
+  Condition.match(['title','description'],'content1 content2');
+  Condition.match(['title','description'],'content1 content2',{
+      'type': 'best_fields'
+    });
 ```
-生成的查询 json 为
+The generated query json is
 ```json
-  {
-    "multi_match":{
-        "query":"content1 content2",
-        "type":"best_fields",
-        "fields":["title","description"]
-    }
-  }
+  {
+    "multi_match":{
+        "query": "content1 content2",
+        "type": "best_fields",
+        "fields":["title","description"]
+    }
+  }
 ```
-#### 短语查询 matchPhrase 和 matchPhrasePrefix
+#### Phrase query matchPhrase and matchPhrasePrefix
 ```js
 condition.matchPhrase('title','content1 content2');
 condition.matchPrasePrefix('title','content1 content2');
 condition.matchPhrase('title','content1 content2',{
-  'analyzer':'test_analyzer'
-  });
+  'analyzer': 'test_analyzer'
+  });
 ```
-生成查询 json
+Generate query json
 ```json
-  {
-    "match_phrase":{
-      "title":{
-        "query":"content1 content2",
-        "analyzer":"test_analyzer"
-      }
-    }
-  }
-  {
-    "match_phrase_prefix":{
-      "title":{
-        "query":"content1 content2"
-      }
-    }
-  }
+  {
+    "match_phrase":{
+      "title":{
+        "query": "content1 content2",
+        "analyzer": "test_analyzer"
+      }
+    }
+  }
+  {
+    "match_phrase_prefix":{
+      "title":{
+        "query": "content1 content2"
+      }
+    }
+  }
 ```
-### 精确值
-#### term 查询
+### The exact value
+#### term Query
 ```js
-condition.term('age',13);
-condition.term('age',[13,15]);
+Condition.term('age',13);
+Condition.term('age',[13,15]);
 ```
-生成查询 json
+Generate query json
 ```json
-  {
-    "term":{
-        "age":13
-    }
-  }
-  {
-    "terms":{
-        "age":[13,15]
-    }
-  }
+  {
+    "term":{
+        "age": 13
+    }
+  }
+  {
+    "terms":{
+        "age": [13,15]
+    }
+  }
 ```
-#### exists 查询
+#### exists Query
 ```js
-condition.exists('age');
-condition.exists(['age','title']);
+Condition.exists('age');
+Condition.exists(['age','title']);
 ```
-生成json
+Generate json
 ```json
 {
-  "exists":{
-    "field":"age"
-  }
+  "exists":{
+    "field":"age"
+  }
 }
 {
-  "exists":{
-    "fields":["age","title"]
-  }
+  "exists":{
+    "fields":["age","title"]
+  }
 }
 ```
-#### range 查询
+#### range Query
 ```js
-condition.range('age',1);
-condition.range('age',1,10);
-condition.range('age',null,10);
-condition.range('age',1,10,true,false);
+Condition.range('age',1);
+Condition.range('age',1,10);
+Condition.range('age',null,10);
+Condition.range('age',1,10,true,false);
 ```
-生成json
+Generate json
 ```json
-  {
-    "range":{
-        "age":{
-            "gt":1
-        }
-    }
-  }
-  {
-    "range":{
-        "age":{
-            "gt":1,
-            "lt":10
-        }
-    }
-  }
-  {
-    "range":{
-        "age":{
-            "lt":10
-        }
-    }
-  }
-  {
-    "range":{
-        "age":{
-            "gte":1,
-            "lt":10
-        }
-    }
-  }
+  {
+    "range":{
+        "age":{
+            "gt": 1
+        }
+    }
+  }
+  {
+    "range":{
+        "age":{
+            "gt": 1,
+            "lt": 10
+        }
+    }
+  }
+  {
+    "range":{
+        "age":{
+            "lt": 10
+        }
+    }
+  }
+  {
+    "range":{
+        "age":{
+            "gte": 1,
+            "lt": 10
+        }
+    }
+  }
 ```
-使用 Range 对象
+Use the Range object
 ```js
 const Range = require('elasticsearch-orm').Range();
 let range = new Range(1);
@@ -508,7 +508,7 @@ condition.fuzzy('title',{
   'boost':1.0
 })
 ```
-生成 json 文件
+Generate json file
 ```json
 {
   "prefix":{
@@ -529,7 +529,7 @@ condition.fuzzy('title',{
   }
 }
 ```
-### 地理位置查询
+### Location query
 #### geoShape
 ```js
 condition.geoShape('location','circle',
@@ -542,7 +542,7 @@ condition.geoShape('location','circle',
     "relation":"within"
     })
 ```
-生成json
+Generate json
 ```json
   {
     "geo_shape":{
@@ -566,7 +566,7 @@ condition.geoShape('location','circle',
     'lat':31.0
     },'100m');
 ```
-生成 json
+Generate json
 ```json
   {
     "geo_distance":{
@@ -591,7 +591,7 @@ condition.geoPolygon('location',[{
      'lat':42.4
     }])
 ```
-生成 json
+Generate json
 ```json
 {
   "geo_polygon":{
@@ -623,7 +623,7 @@ condition.geoPolygon('location',[{
     }
     });
 ```
-生成 json
+Generate json
 ```json
 {
   "geo_bounding_box":{
@@ -640,14 +640,14 @@ condition.geoPolygon('location',[{
   }
 }
 ```
-### 关系查询
+### Relational query
 #### hasParent
 ```js
   condition.hasParent('parentType',new Condition().matchAll(),{
     'score':1
     });
 ```
-生成 json
+Generate json
 ```json
   {
     "has_parent":{
@@ -664,7 +664,7 @@ condition.geoPolygon('location',[{
     'min_children':10
     });
 ```
-生成 json
+Generate json
 ```json
   {
     "has_child":{
@@ -679,7 +679,7 @@ condition.geoPolygon('location',[{
 ```js
 condition.parentId('parent_id_1','type');
 ```
-生成 json
+Generate json
 ```json
 {
   "parent_id":{
@@ -689,8 +689,8 @@ condition.parentId('parent_id_1','type');
 }
 ```
 
-## 聚合API
-### 基本的数值聚合
+## Aggregation API
+### Basic numerical aggregation
 ```js
   const Aggs = require('elasticsearch-orm').Aggs;
   aggs = new Aggs('test').avg('age');
@@ -704,7 +704,7 @@ condition.parentId('parent_id_1','type');
   aggs = new Aggs('test').percentileRanks('age');
 
 ```
-### 分组聚合
+### Packet aggregation
 #### terms
 ```js
 aggs = new Aggs('test').terms('age',{
@@ -760,7 +760,7 @@ aggs =new Aggs('test').sampler(100,{
 ```js
   aggs = new Aggs('test').significantTerms('age');
 ```
-### 地理相关的聚合
+### Geographically related aggregation
 #### geoBounds
 ```js
 aggs = new Aggs('test').geoBounds('location',{
